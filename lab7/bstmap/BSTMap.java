@@ -1,6 +1,7 @@
 package bstmap;
 
 
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -92,12 +93,12 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     public void printInOrder() {
         System.out.print("{");
-        traverseInOrder(root);
+        traverseAndPrintInOrder(root);
         System.out.print("}");
         System.out.println();
     }
 
-    private void traverseInOrder(Node x) {
+    private void traverseAndPrintInOrder(Node x) {
         if (x == null) {
             return;
         }
@@ -108,7 +109,19 @@ public class BSTMap<K extends Comparable<K>, V> implements Map61B<K, V> {
 
     @Override
     public Set<K> keySet() {
-        throw new UnsupportedOperationException();
+//        throw new UnsupportedOperationException();
+        Set<K> s = new HashSet<K>();
+        traverseInOrder(root, s);
+        return s;
+    }
+
+    private void traverseInOrder(Node x, Set<K> s) {
+        if (x == null) {
+            return;
+        }
+        traverseInOrder(x.left, s);
+        s.add(x.key);
+        traverseInOrder(x.right, s);
     }
 
     @Override
