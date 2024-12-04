@@ -131,29 +131,21 @@ public class MyHashMap<K, V> implements Map61B<K, V>, Iterable<K> {
 
     @Override
     public boolean containsKey(K key) {
-        for (Collection<Node> bucket : buckets) {
-            for (Node node : bucket) {
-                if (node.key.equals(key)) {
-                    return true;
-                }
+        int num = Math.floorMod(key.hashCode(), bucketSize);
+        for (Node n : buckets[num]) {
+            if (n.key.equals(key)) {
+                return true;
             }
         }
         return false;
-//        for (K k : this) {
-//            if (k.equals(key)) {
-//                return true;
-//            }
-//        }
-//        return false;
     }
 
     @Override
     public V get(K key) {
-        for (Collection<Node> bucket : buckets) {
-            for (Node node : bucket) {
-                if (node.key.equals(key)) {
-                    return node.value;
-                }
+        int num = Math.floorMod(key.hashCode(), bucketSize);
+        for (Node n : buckets[num]) {
+            if (n.key.equals(key)) {
+                return n.value;
             }
         }
         return null;
@@ -207,15 +199,14 @@ public class MyHashMap<K, V> implements Map61B<K, V>, Iterable<K> {
 
     @Override
     public V remove(K key) {
-        for (Collection<Node> bucket : buckets) {
-            for (Node node : bucket) {
-                if (node.key.equals(key)) {
-                    V value = node.value;
-                    bucket.remove(node);
-                    size--;
-                    keySet.remove(key);
-                    return value;
-                }
+        int num = Math.floorMod(key.hashCode(), bucketSize);
+        for (Node n : buckets[num]) {
+            if (n.key.equals(key)) {
+                V value = n.value;
+                buckets[num].remove(n);
+                size--;
+                keySet.remove(key);
+                return value;
             }
         }
         return null;
@@ -223,14 +214,14 @@ public class MyHashMap<K, V> implements Map61B<K, V>, Iterable<K> {
 
     @Override
     public V remove(K key, V value) {
-        for (Collection<Node> bucket : buckets) {
-            for (Node node : bucket) {
-                if (node.key.equals(key) && node.value.equals(value)) {
-                    bucket.remove(node);
-                    size--;
-                    keySet.remove(key);
-                    return value;
-                }
+        int num = Math.floorMod(key.hashCode(), bucketSize);
+        for (Node n : buckets[num]) {
+            if (n.key.equals(key) && n.value.equals(value)) {
+                V val = n.value;
+                buckets[num].remove(n);
+                size--;
+                keySet.remove(key);
+                return val;
             }
         }
         return null;
