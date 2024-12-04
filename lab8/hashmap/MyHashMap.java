@@ -254,6 +254,6 @@ public class MyHashMap<K, V> implements Map61B<K, V>, Iterable<K> {
 
     @Override
     public Iterator<K> iterator() {
-        return keySet.iterator();
+        return new MyIterator();
     }
 }
