@@ -1,10 +1,10 @@
 # Gitlet Design Document
 
-**Name**:
+**Name**:LI
 
 ## Classes and Data Structures
 
-### Class 1
+### Class 1 Commit
 
 #### Fields
 
