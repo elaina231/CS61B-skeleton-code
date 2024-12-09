@@ -11,14 +11,12 @@ import static gitlet.Utils.*;
 
 
 /** Represents a gitlet repository.
- *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
  *
  *  @author Li
  */
 public class Repository {
     /**
-     * TODO: add instance variables here.
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
      * variable is used. We've provided two examples for you.
@@ -48,7 +46,8 @@ public class Repository {
     public static void init() throws IOException {
         /* Make objects directory. */
         if (!GITLET_DIR.mkdirs()) {
-            System.out.println("A Gitlet version-control system already exists in the current directory.");
+            System.out.println("A Gitlet version-control system " +
+                    "already exists in the current directory.");
             return;
         }
         Tree.BLOB_DIR.mkdirs();
@@ -56,29 +55,29 @@ public class Repository {
         /* Make initial commit. */
         Commit ini = new Commit("initial commit", new Date(0), null);
         ini.branchName = "master";
-        String ini_id = ini.generateId();
-        File ini_file = join(Tree.COMMIT_DIR, ini_id + ".txt");
-        ini_file.createNewFile();
-        writeObject(ini_file, ini);
+        String iniId = ini.generateId();
+        File iniFile = join(Tree.COMMIT_DIR, iniId + ".txt");
+        iniFile.createNewFile();
+        writeObject(iniFile, ini);
         /* Make master head. */
         File master = join(Tree.REFS_DIR, "master");
         master.mkdirs();
-        File master_file = join(master, "1.txt");
-        master_file.createNewFile();
-        writeContents(master_file, ini_id);
+        File masterFile = join(master, "1.txt");
+        masterFile.createNewFile();
+        writeContents(masterFile, iniId);
         /* Make HEAD directory which point to current commit and point it to initial commit. */
         File head = Tree.HEAD_DIR;
         head.mkdirs();
         File h = join(head, "1.txt");
         h.createNewFile();
-        writeContents(h, ini_id);
+        writeContents(h, iniId);
         /* Make stage directory. */
         Tree.STAGE_DIR.mkdirs();
         /* Create stage object and store in stage directory. */
         Stage s = new Stage();
-        File stage_file = join(Tree.STAGE_DIR, "1.txt");
-        stage_file.createNewFile();
-        writeObject(stage_file, s);
+        File stageFile = join(Tree.STAGE_DIR, "1.txt");
+        stageFile.createNewFile();
+        writeObject(stageFile, s);
     }
 
     /**
@@ -124,14 +123,10 @@ public class Repository {
      */
     private static void addToStage(Stage s, Blob b) {
         if (s.addNameToBlobId.containsKey(b.filename)) {
-            if (s.addNameToBlobId.get(b.filename).equals(b.blobId)) {
-//                            System.out.println("addToStage:same file");
-            } else {
-//                            System.out.println("addToStage:override file");
+            if (!s.addNameToBlobId.get(b.filename).equals(b.blobId)) {
                 s.addNameToBlobId.put(b.filename, b.blobId);
             }
         } else {
-//                        System.out.println("addToStage:no file and add it");
             s.addNameToBlobId.put(b.filename, b.blobId);
         }
     }
@@ -173,6 +168,7 @@ public class Repository {
             /* not exist in commit, add it to stage. */
             addToStage(s, addFile);
         }
+        s.removeName.remove(addFileName);
         writeStage(s);
     }
 
@@ -244,12 +240,12 @@ public class Repository {
         }
         if (c.nameToBlobId.containsKey(fileName)) {
             s.removeName.add(fileName);
+            File f = join(Tree.CWD, fileName);
+            if (f.exists()) {
+                f.delete();
+            }
         }
         writeStage(s);
-        File f = join(Tree.CWD, fileName);
-        if (f.exists()) {
-            f.delete();
-        }
     }
 
     /**
@@ -401,4 +397,5 @@ public class Repository {
         String id = readContentsAsString(f);
         checkoutCommit(fileName, id);
     }
+
 }
