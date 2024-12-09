@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.util.*;
 
 public class Stage implements Serializable {
-    /** The id of the file in add stage. */
+    /** Key:filename Value:id  The map of file in add stage */
     public Map<String, String> addNameToBlobId;
-    /** The id of the file in remove stage. */
+    /** Key:filename  The set of the file in rm stage */
     public Set<String> removeName;
 
     /** Construction method. */

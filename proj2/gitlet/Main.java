@@ -74,6 +74,56 @@ public class Main {
                 }
                 Repository.log();
                 break;
+            case "global-log":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length != 1) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                Repository.globalLog();
+                break;
+            case "find":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length != 2) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                if (!Repository.find(args[1])) {
+                    System.out.println("Found no commit with that message.");
+                }
+                break;
+            case "status":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length != 1) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                Repository.status();
+                break;
+            case "checkout":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length == 2) {
+
+                } else if (args.length == 3) {
+                    Repository.checkoutCurrentCommit(args[2]);
+                } else if (args.length == 4) {
+                    Repository.checkoutCommit(args[3], args[1]);
+                } else {
+                    System.out.println("Incorrect operands.");
+                }
+                break;
             default:
                 System.out.println("No command with that name exists.");
                 System.exit(0);

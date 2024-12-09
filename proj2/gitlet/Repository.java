@@ -5,13 +5,10 @@ import java.io.File;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 
 import static gitlet.Utils.*;
 
-// TODO: any imports you need here
 
 /** Represents a gitlet repository.
  *  TODO: It's a good idea to give a description here of what else this Class
@@ -27,20 +24,27 @@ public class Repository {
      * variable is used. We've provided two examples for you.
      */
 
-    /** The current working directory. */
+    /**
+     * The current working directory.
+     */
     public static final File CWD = new File(System.getProperty("user.dir"));
-    /** The .gitlet directory. */
+    /**
+     * The .gitlet directory.
+     */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
 
-    /* TODO: fill in the rest of this class. */
 
-    /** Turn the time to standard formation. */
+    /**
+     * Converts the time to a standard format.
+     */
     private static String dateToTimeStamp(Date date) {
         DateFormat dateFormat = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy Z", Locale.US);
         return dateFormat.format(date);
     }
 
-    /** Creates a new Gitlet version-control system in the current directory. */
+    /**
+     * Creates a new Gitlet version-control system in the current directory.
+     */
     public static void init() throws IOException {
         /* Make objects directory. */
         if (!GITLET_DIR.mkdirs()) {
@@ -77,33 +81,47 @@ public class Repository {
         writeObject(stage_file, s);
     }
 
-    /** Get the commit object according to id. */
+    /**
+     * Retrieves the commit object associated with the given ID. If no commit
+     * with the given id exists, return null.
+     */
     private static Commit getCommit(String id) {
         File f = join(Tree.COMMIT_DIR, id + ".txt");
+        if (!f.exists()) {
+            return null;
+        }
         Commit c = readObject(f, Commit.class);
         return c;
     }
 
-    /** Get the current commit. */
+    /**
+     * Retrieves the current commit.
+     */
     private static Commit getCurrentCommit() {
         File f = join(Tree.HEAD_DIR, "1.txt");
         String id = readContentsAsString(f);
         return getCommit(id);
     }
 
-    /** Get the stage object. */
+    /**
+     * Retrieves the stage object.
+     */
     private static Stage getStage() {
         File f = join(Tree.STAGE_DIR, "1.txt");
         return readObject(f, Stage.class);
     }
 
-    /** Write a blob into object. */
+    /**
+     * Writes a blob object to the blob directory.
+     */
     private static void writeBlob(Blob b) {
         File f = join(Tree.BLOB_DIR, b.blobId + ".txt");
         writeObject(f, b);
     }
 
-    /** Add a blob to addstage. */
+    /**
+     * Add a blob to addstage.
+     */
     private static void addToStage(Stage s, Blob b) {
         if (s.addNameToBlobId.containsKey(b.filename)) {
             if (s.addNameToBlobId.get(b.filename).equals(b.blobId)) {
@@ -118,13 +136,17 @@ public class Repository {
         }
     }
 
-    /** Write back the new stage*/
+    /**
+     * Write back the new stage
+     */
     private static void writeStage(Stage s) {
         File f = join(Tree.STAGE_DIR, "1.txt");
         writeObject(f, s);
     }
 
-    /** Adds a copy of the file as it currently exists to the staging area. */
+    /**
+     * Adds a copy of the file as it currently exists to the staging area.
+     */
     public static void add(String addFileName) {
         Commit c = getCurrentCommit();
         Stage s = getStage();
@@ -148,14 +170,16 @@ public class Repository {
                 addToStage(s, addFile);
             }
         } else {
-        /* not exist in commit, add it to stage. */
+            /* not exist in commit, add it to stage. */
             addToStage(s, addFile);
         }
         writeStage(s);
     }
 
-    /** Saves a snapshot of tracked files in the current commit and staging area so they
-     *  can be restored at a later time, creating a new commit.*/
+    /**
+     * Saves a snapshot of tracked files in the current commit and staging area so they
+     * can be restored at a later time, creating a new commit.
+     */
     public static void commit(String message) {
         /* Clone parent commit and take the stage. */
         if (Objects.equals(message, "")) {
@@ -200,10 +224,12 @@ public class Repository {
 //                    newCommit.print();
     }
 
-    /** Unstage the file if it is currently staged for addition. If the file is tracked
+    /**
+     * Unstage the file if it is currently staged for addition. If the file is tracked
      * in the current commit, stage it for removal and remove the file from the working
      * directory if the user has not already done so (do not remove it unless it is tracked
-     * in the current commit).*/
+     * in the current commit).
+     */
     public static void rm(String fileName) {
         Stage s = getStage();
         Commit c = getCurrentCommit();
@@ -211,6 +237,7 @@ public class Repository {
         print the error message No reason to remove the file. */
         if (!s.addNameToBlobId.containsKey(fileName) && !c.nameToBlobId.containsKey(fileName)) {
             System.out.println("No reason to remove the file.");
+            return;
         }
         if (s.addNameToBlobId.containsKey(fileName)) {
             s.addNameToBlobId.remove(fileName);
@@ -225,36 +252,153 @@ public class Repository {
         }
     }
 
-    /** Return a commit which is the first parent of the given commit,
-     * if did not have parent, return a commit with message "end". */
+    /**
+     * Returns the commit that is the first parent of the given commit.
+     * If the commit has no parent, returns a commit with the message "end".
+     */
     private static Commit getFirstParentCommit(Commit c) {
         if (c.parents.isEmpty()) {
-            return new Commit("end",null, null);
+            return new Commit("end", null, null);
         }
         String id = c.parents.get(0);
         File f = join(Tree.COMMIT_DIR, id + ".txt");
         return readObject(f, Commit.class);
     }
 
-    /** Starting at the current head commit, display information about each commit
-     *  backwards along the commit tree until the initial commit. */
+    private static void commitPrint(Commit currentCommit) {
+        System.out.println("===");
+        System.out.println("commit " + currentCommit.generateId());
+        if (currentCommit.parents.size() > 1) {
+            System.out.print("Merge: ");
+            for (String parent : currentCommit.parents) {
+                String s = parent.substring(0, 7);
+                System.out.print(s + " ");
+            }
+            System.out.println();
+        }
+        System.out.println("Date: " + dateToTimeStamp(currentCommit.time));
+        System.out.println(currentCommit.message);
+        System.out.println();
+    }
+
+    /**
+     * Starting at the current head commit, display information about each commit
+     * backwards along the commit tree until the initial commit.
+     */
     public static void log() {
         Commit currentCommit = getCurrentCommit();
         while (!currentCommit.message.equals("end")) {
-            System.out.println("===");
-            System.out.println("commit " + currentCommit.generateId());
-            if (currentCommit.parents.size() > 1) {
-                System.out.print("Merge: ");
-                for (String parent : currentCommit.parents) {
-                    String s = parent.substring(0, 7);
-                    System.out.print(s + " ");
-                }
-                System.out.println();
-            }
-            System.out.println("Date: " + dateToTimeStamp(currentCommit.time));
-            System.out.println(currentCommit.message);
-            System.out.println();
+            commitPrint(currentCommit);
             currentCommit = getFirstParentCommit(currentCommit);
         }
+    }
+
+    /**
+     * Displays information about all commits ever made.
+     */
+    public static void globalLog() {
+        List<String> l = plainFilenamesIn(Tree.COMMIT_DIR);
+        assert l != null;
+        for (String filename : l) {
+            /* because the filename including ".txt", so forgo the last four character. */
+            String id = filename.substring(0, filename.length() - 4);
+            commitPrint(getCommit(id));
+        }
+    }
+
+    /**
+     * Prints out the ids of all commits that have the given commit message.
+     */
+    public static boolean find(String m) {
+        boolean isAny = false;
+        List<String> l = plainFilenamesIn(Tree.COMMIT_DIR);
+        assert l != null;
+        for (String filename : l) {
+            /* because the filename including ".txt", so forgo the last four character. */
+            String id = filename.substring(0, filename.length() - 4);
+            Commit c = getCommit(id);
+            if (c.message.equals(m)) {
+                isAny = true;
+                System.out.println(c.generateId());
+            }
+        }
+        return isAny;
+    }
+
+    /**
+     * Displays what branches currently exist, and marks the current branch with a *.
+     * Also displays what files have been staged for addition or removal.
+     */
+    public static void status() {
+        /* Branches. */
+        System.out.println("=== Branches ===");
+        File[] dir = Tree.REFS_DIR.listFiles();
+        Arrays.sort(dir, Comparator.comparing(File::getName));
+        String currentBranch = getCurrentCommit().branchName;
+        for (File f : dir) {
+            if (f.getName().equals(currentBranch)) {
+                System.out.print("*");
+            }
+            System.out.println(f.getName());
+        }
+        System.out.println();
+        /* Staged Files. */
+        System.out.println("=== Staged Files ===");
+        Stage s = getStage();
+        for (String fileName : s.addNameToBlobId.keySet()) {
+            System.out.println(fileName);
+        }
+        System.out.println();
+        /* Removed Files. */
+        System.out.println("=== Removed Files ===");
+        for (String fileName : s.removeName) {
+            System.out.println(fileName);
+        }
+        System.out.println();
+        /* Modification Not Staged For Commit. */
+        System.out.println("=== Modifications Not Staged For Commit ===");
+//      TODO
+        System.out.println();
+        /* Untracked Files. */
+        System.out.println("=== Untracked Files ===");
+//      TODO
+        System.out.println();
+    }
+
+    /**
+     * Takes the version of the file as it exists in the commit with the given id, and
+     * puts it in the working directory, overwriting the version of the file that’s already
+     * there if there is one. The new version of the file is not staged.
+     */
+    public static void checkoutCommit(String fileName, String commitId) {
+        Commit c = getCommit(commitId);
+        if (c == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+        if (!c.nameToBlobId.containsKey(fileName)) {
+            System.out.println("File does not exist in that commit.");
+            return;
+        }
+        String blobId = c.nameToBlobId.get(fileName);
+        Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
+        File f = join(Tree.CWD, fileName);
+        if (!f.exists()) {
+            try {
+                f.createNewFile();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        writeContents(f, b.contents);
+    }
+
+    /** Takes the version of the file as it exists in the head commit and puts it in the
+     *  working directory, overwriting the version of the file that’s already there if there
+     *  is one. The new version of the file is not staged.*/
+    public static void checkoutCurrentCommit(String fileName) {
+        File f = join(Tree.HEAD_DIR, "1.txt");
+        String id = readContentsAsString(f);
+        checkoutCommit(fileName, id);
     }
 }
