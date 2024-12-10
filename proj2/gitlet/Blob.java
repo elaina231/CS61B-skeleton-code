@@ -9,11 +9,11 @@ import static gitlet.Utils.*;
 public class Blob implements Serializable {
 
     /** The contents of this file. */
-    public String contents;
+    private String contents;
     /** The name of this file. */
-    public String filename;
+    private String filename;
     /** The sha1 id of blob. */
-    public String blobId;
+    private String blobId;
 
     /** Construction method. */
     public Blob(String filename, String contents) {
@@ -26,5 +26,20 @@ public class Blob implements Serializable {
     public void print() {
         System.out.println(filename);
         System.out.println(blobId);
+    }
+
+    /** Get the contents of the blob. */
+    public String getContents() {
+        return contents;
+    }
+
+    /** Get the filename of the blob. */
+    public String getFilename() {
+        return filename;
+    }
+
+    /** Get the id of the blob. */
+    public String getBlobId() {
+        return blobId;
     }
 }

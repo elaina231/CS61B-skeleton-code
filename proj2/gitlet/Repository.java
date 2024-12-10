@@ -125,7 +125,7 @@ public class Repository {
      * Writes a blob object to the blob directory.
      */
     private static void writeBlob(Blob b) {
-        File f = join(Tree.BLOB_DIR, b.blobId + ".txt");
+        File f = join(Tree.BLOB_DIR, b.getBlobId() + ".txt");
         writeObject(f, b);
     }
 
@@ -133,12 +133,12 @@ public class Repository {
      * Add a blob to addstage.
      */
     private static void addToStage(Stage s, Blob b) {
-        if (s.addNameToBlobId.containsKey(b.filename)) {
-            if (!s.addNameToBlobId.get(b.filename).equals(b.blobId)) {
-                s.addNameToBlobId.put(b.filename, b.blobId);
+        if (s.addContains(b.getFilename())) {
+            if (!s.addGet(b.getFilename()).equals(b.getBlobId())) {
+                s.addPut(b.getFilename(), b.getBlobId());
             }
         } else {
-            s.addNameToBlobId.put(b.filename, b.blobId);
+            s.addPut(b.getFilename(), b.getBlobId());
         }
     }
 
@@ -165,10 +165,10 @@ public class Repository {
         Blob addFile = new Blob(addFileName, readContentsAsString(f));
         writeBlob(addFile);
         /* whether current commit contain the file. */
-        if (c.nameToBlobId.containsKey(addFile.filename)) {
-            if (c.nameToBlobId.get(addFile.filename).equals(addFile.blobId)) {
+        if (c.nameToBlobId.containsKey(addFile.getFilename())) {
+            if (c.nameToBlobId.get(addFile.getFilename()).equals(addFile.getBlobId())) {
                 /* if equals, check stage and delete if it exist. */
-                s.addNameToBlobId.remove(addFile.filename);
+                s.addRemove(addFile.getFilename());
             } else {
                 /* add it to add stage. */
                 addToStage(s, addFile);
@@ -212,13 +212,13 @@ public class Repository {
 //                    System.out.println("new clone commit:");
 //                    newCommit.print();
         Stage s = getStage();
-        if (s.addNameToBlobId.isEmpty() && s.removeName.isEmpty()) {
+        if (s.addIsEmpty() && s.removeName.isEmpty()) {
             System.out.println("No changes added to the commit.");
             return;
         }
         /* Process the add stage. */
-        for (String fileName : s.addNameToBlobId.keySet()) {
-            String fileId = s.addNameToBlobId.get(fileName);
+        for (String fileName : s.addKeySet()) {
+            String fileId = s.addGet(fileName);
             newCommit.nameToBlobId.put(fileName, fileId);
         }
         /* process the rm stage. */
@@ -226,7 +226,7 @@ public class Repository {
             newCommit.nameToBlobId.remove(fileName);
         }
         /* Clear the staging area. */
-        s.addNameToBlobId.clear();
+        s.addClear();
         s.removeName.clear();
         writeStage(s);
         /* Update the commit tree, HEAD, branch head. */
@@ -253,11 +253,11 @@ public class Repository {
         Commit c = getCurrentCommit();
         /* If the file is neither staged nor tracked by the head commit,
         print the error message No reason to remove the file. */
-        if (!s.addNameToBlobId.containsKey(fileName) && !c.nameToBlobId.containsKey(fileName)) {
+        if (!s.addContains(fileName) && !c.nameToBlobId.containsKey(fileName)) {
             System.out.println("No reason to remove the file.");
             return;
         }
-        s.addNameToBlobId.remove(fileName);
+        s.addRemove(fileName);
         if (c.nameToBlobId.containsKey(fileName)) {
             s.removeName.add(fileName);
             File f = join(Tree.CWD, fileName);
@@ -361,7 +361,7 @@ public class Repository {
         /* Staged Files. */
         System.out.println("=== Staged Files ===");
         Stage s = getStage();
-        for (String fileName : s.addNameToBlobId.keySet()) {
+        for (String fileName : s.addKeySet()) {
             System.out.println(fileName);
         }
         System.out.println();
@@ -406,7 +406,7 @@ public class Repository {
                 throw new RuntimeException(e);
             }
         }
-        writeContents(f, b.contents);
+        writeContents(f, b.getContents());
     }
 
     /** Takes the version of the file as it exists in the head commit and puts it in the
@@ -427,7 +427,7 @@ public class Repository {
         Stage s = getStage();
         for (String fileName : l) {
             if (!currentCommit.nameToBlobId.containsKey(fileName)
-                    && !s.addNameToBlobId.containsKey(fileName)) {
+                    && !s.addContains(fileName)) {
                 System.out.println("There is an untracked file in the way"
                         + "; delete it, or add and commit it first.");
                 return;
@@ -450,7 +450,7 @@ public class Repository {
             }
             String blobId = newCommit.nameToBlobId.get(fileName);
             Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
-            writeContents(f, b.contents);
+            writeContents(f, b.getContents());
         }
         s.clear();
         writeStage(s);

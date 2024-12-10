@@ -5,7 +5,7 @@ import java.util.*;
 
 public class Stage implements Serializable {
     /** Key:filename Value:id  The map of file in add stage */
-    public Map<String, String> addNameToBlobId;
+    private Map<String, String> addNameToBlobId;
     /** Key:filename  The set of the file in rm stage */
     public Set<String> removeName;
 
@@ -25,5 +25,33 @@ public class Stage implements Serializable {
     public void clear() {
         addNameToBlobId.clear();
         removeName.clear();
+    }
+
+    public void addPut(String key, String value) {
+        addNameToBlobId.put(key, value);
+    }
+
+    public boolean addContains(String key) {
+        return addNameToBlobId.containsKey(key);
+    }
+
+    public String addGet(String key) {
+        return addNameToBlobId.get(key);
+    }
+
+    public void addRemove(String key) {
+        addNameToBlobId.remove(key);
+    }
+
+    public boolean addIsEmpty() {
+        return addNameToBlobId.isEmpty();
+    }
+
+    public Set<String> addKeySet() {
+        return addNameToBlobId.keySet();
+    }
+
+    public void addClear() {
+        addNameToBlobId.clear();
     }
 }
