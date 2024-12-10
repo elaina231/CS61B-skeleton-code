@@ -424,8 +424,10 @@ public class Repository {
     private static void checkoutAllFileCommit(Commit newCommit) {
         Commit currentCommit = getCurrentCommit();
         List<String> l = plainFilenamesIn(Tree.CWD);
+        Stage s = getStage();
         for (String fileName : l) {
-            if (!currentCommit.nameToBlobId.containsKey(fileName)) {
+            if (!currentCommit.nameToBlobId.containsKey(fileName)
+                    && !s.addNameToBlobId.containsKey(fileName)) {
                 System.out.println("There is an untracked file in the way"
                         + "; delete it, or add and commit it first.");
                 return;
