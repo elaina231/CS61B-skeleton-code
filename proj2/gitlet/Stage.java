@@ -20,4 +20,10 @@ public class Stage implements Serializable {
         System.out.println(addNameToBlobId);
         System.out.println(removeName);
     }
+
+    /** Clear the staging area. */
+    public void clear() {
+        addNameToBlobId.clear();
+        removeName.clear();
+    }
 }

@@ -27,8 +27,6 @@ public class Commit implements Serializable {
     public List<String> parents;
     /** The id of the file in this Commit. */
     public Map<String, String> nameToBlobId;
-    /** The branch name of this commit. */
-    public String branchName;
 
     /** Construction method. */
     public Commit(String message, Date time, String parent) {
@@ -46,7 +44,6 @@ public class Commit implements Serializable {
         newCommit.time = new Date();
         newCommit.parents.add(parent.generateId());
         newCommit.nameToBlobId = new TreeMap<>(parent.nameToBlobId);
-        newCommit.branchName = parent.branchName;
         return newCommit;
     }
 
@@ -62,6 +59,5 @@ public class Commit implements Serializable {
         System.out.println("time: " + time);
         System.out.println("parents: " + parents);
         System.out.println("nameToBlobId: " + nameToBlobId);
-        System.out.println("branchName: " + branchName);
     }
 }

@@ -16,6 +16,7 @@ import static gitlet.Utils.*;
  *  @author Li
  */
 public class Repository {
+
     /**
      * List all instance variables of the Repository class here with a useful
      * comment above them describing what that variable represents and how that
@@ -54,7 +55,6 @@ public class Repository {
         Tree.COMMIT_DIR.mkdirs();
         /* Make initial commit. */
         Commit ini = new Commit("initial commit", new Date(0), null);
-        ini.branchName = "master";
         String iniId = ini.generateId();
         File iniFile = join(Tree.COMMIT_DIR, iniId + ".txt");
         iniFile.createNewFile();
@@ -68,7 +68,7 @@ public class Repository {
         /* Make HEAD directory which point to current commit and point it to initial commit. */
         File head = Tree.HEAD_DIR;
         head.mkdirs();
-        File h = join(head, "1.txt");
+        File h = join(head, "master.txt");
         h.createNewFile();
         writeContents(h, iniId);
         /* Make stage directory. */
@@ -97,7 +97,7 @@ public class Repository {
      * Retrieves the current commit.
      */
     private static Commit getCurrentCommit() {
-        File f = join(Tree.HEAD_DIR, "1.txt");
+        File f = join(Tree.HEAD_DIR, getBranchName() + ".txt");
         String id = readContentsAsString(f);
         return getCommit(id);
     }
@@ -157,9 +157,7 @@ public class Repository {
         if (c.nameToBlobId.containsKey(addFile.filename)) {
             if (c.nameToBlobId.get(addFile.filename).equals(addFile.blobId)) {
                 /* if equals, check stage and delete if it exist. */
-                if (s.addNameToBlobId.containsKey(addFile.filename)) {
-                    s.addNameToBlobId.remove(addFile.filename);
-                }
+                s.addNameToBlobId.remove(addFile.filename);
             } else {
                 /* add it to add stage. */
                 addToStage(s, addFile);
@@ -170,6 +168,19 @@ public class Repository {
         }
         s.removeName.remove(addFileName);
         writeStage(s);
+    }
+
+    /** Get the current branch name. */
+    private static String getBranchName() {
+        File[] files = Tree.HEAD_DIR.listFiles((dir, name) -> name.endsWith(".txt"));
+        assert files != null;
+        String name = files[0].getName().substring(0, files[0].getName().length() - 4);
+        if (files.length == 1) {
+            return name;
+        } else {
+            System.out.println("No txt file found or multiple txt files exist.");
+            return null;
+        }
     }
 
     /**
@@ -208,9 +219,9 @@ public class Repository {
         s.removeName.clear();
         writeStage(s);
         /* Update the commit tree, HEAD, branch head. */
-        File head = join(Tree.HEAD_DIR, "1.txt");
+        File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
         writeContents(head, newCommit.generateId());
-        File branchHead = join(Tree.REFS_DIR, newCommit.branchName, "1.txt");
+        File branchHead = join(Tree.REFS_DIR, getBranchName(), "1.txt");
         writeContents(branchHead, newCommit.generateId());
         /* Write commit into objects. */
         File com = join(Tree.COMMIT_DIR, newCommit.generateId() + ".txt");
@@ -235,9 +246,7 @@ public class Repository {
             System.out.println("No reason to remove the file.");
             return;
         }
-        if (s.addNameToBlobId.containsKey(fileName)) {
-            s.addNameToBlobId.remove(fileName);
-        }
+        s.addNameToBlobId.remove(fileName);
         if (c.nameToBlobId.containsKey(fileName)) {
             s.removeName.add(fileName);
             File f = join(Tree.CWD, fileName);
@@ -330,7 +339,7 @@ public class Repository {
         System.out.println("=== Branches ===");
         File[] dir = Tree.REFS_DIR.listFiles();
         Arrays.sort(dir, Comparator.comparing(File::getName));
-        String currentBranch = getCurrentCommit().branchName;
+        String currentBranch = getBranchName();
         for (File f : dir) {
             if (f.getName().equals(currentBranch)) {
                 System.out.print("*");
@@ -393,9 +402,76 @@ public class Repository {
      *  working directory, overwriting the version of the file that’s already there if there
      *  is one. The new version of the file is not staged.*/
     public static void checkoutCurrentCommit(String fileName) {
-        File f = join(Tree.HEAD_DIR, "1.txt");
+        File f = join(Tree.HEAD_DIR,  getBranchName() + ".txt");
         String id = readContentsAsString(f);
         checkoutCommit(fileName, id);
+    }
+
+    /** Takes all files in the commit at the head of the given branch, and puts them in the
+     * working directory, overwriting the versions of the files that are already there if they exist. */
+    public static void checkoutBranch(String branchName) {
+        File branch = join(Tree.REFS_DIR, branchName, "1.txt");
+        if (!branch.exists()) {
+            System.out.println("No such branch exist.");
+            return;
+        }
+        String commitId = readContentsAsString(branch);
+        Commit currentCommit = getCurrentCommit();
+        if (getBranchName().equals(branchName)) {
+            System.out.println("No need to checkout the current branch.");
+            return;
+        }
+        Commit newCommit = getCommit(commitId);
+        List<String> l = plainFilenamesIn(Tree.CWD);
+        for (String fileName : l) {
+            if (!currentCommit.nameToBlobId.containsKey(fileName)) {
+                System.out.println("There is an untracked file in the way" +
+                        "; delete it, or add and commit it first.");
+                return;
+            }
+        }
+        for (String fileName : l) {
+            if (!newCommit.nameToBlobId.containsKey(fileName)) {
+                File f = join(Tree.CWD, fileName);
+                f.delete();
+            }
+        }
+        for (String fileName : newCommit.nameToBlobId.keySet()) {
+            File f = join(Tree.CWD, fileName);
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            String blobId = newCommit.nameToBlobId.get(fileName);
+            Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
+            writeContents(f, b.contents);
+        }
+        File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
+        head.delete();
+        File newHead = join(Tree.HEAD_DIR, branchName + ".txt");
+        writeContents(newHead, newCommit.generateId());
+        Stage s = getStage();
+        s.clear();
+        writeStage(s);
+    }
+
+    /** Creates a new branch with the given name, and points it at the current head commit. */
+    public static void branch(String branchName) {
+        File newBranch = join(Tree.REFS_DIR, branchName, "1.txt");
+        newBranch.getParentFile().mkdirs();
+        try {
+            if (!newBranch.createNewFile()) {
+                System.out.println("A branch with that name already exists.");
+                return;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        Commit c = getCurrentCommit();
+        writeContents(newBranch, c.generateId());
     }
 
 }
