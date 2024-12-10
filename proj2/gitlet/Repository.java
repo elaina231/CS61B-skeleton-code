@@ -452,7 +452,6 @@ public class Repository {
             Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
             writeContents(f, b.contents);
         }
-        Stage s = getStage();
         s.clear();
         writeStage(s);
     }
