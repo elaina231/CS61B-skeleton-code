@@ -420,8 +420,8 @@ public class Repository {
 
     /** Takes all files in the given commit , and puts them in the
      * working directory, overwriting the versions of the files that are already there if
-     * they exist. */
-    private static void checkoutAllFileCommit(Commit newCommit, String branchName) {
+     * they exist. And clear staging area.  */
+    private static void checkoutAllFileCommit(Commit newCommit) {
         Commit currentCommit = getCurrentCommit();
         List<String> l = plainFilenamesIn(Tree.CWD);
         for (String fileName : l) {
@@ -450,10 +450,6 @@ public class Repository {
             Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
             writeContents(f, b.contents);
         }
-        File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
-        head.delete();
-        File newHead = join(Tree.HEAD_DIR, branchName + ".txt");
-        writeContents(newHead, newCommit.generateId());
         Stage s = getStage();
         s.clear();
         writeStage(s);
@@ -475,7 +471,12 @@ public class Repository {
             return;
         }
         Commit newCommit = getCommit(commitId);
-        checkoutAllFileCommit(newCommit, branchName);
+        checkoutAllFileCommit(newCommit);
+        /* Change HEAD to current branch. */
+        File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
+        head.delete();
+        File newHead = join(Tree.HEAD_DIR, branchName + ".txt");
+        writeContents(newHead, newCommit.generateId());
     }
 
     /** Creates a new branch with the given name, and points it at the current head commit. */
