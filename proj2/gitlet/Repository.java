@@ -85,12 +85,23 @@ public class Repository {
      * with the given id exists, return null.
      */
     private static Commit getCommit(String id) {
-        File f = join(Tree.COMMIT_DIR, id + ".txt");
-        if (!f.exists()) {
-            return null;
+        if (id.length() == 40) {
+            File f = join(Tree.COMMIT_DIR, id + ".txt");
+            if (!f.exists()) {
+                return null;
+            }
+            return readObject(f, Commit.class);
+        } else {
+            File[] files = Tree.COMMIT_DIR.listFiles((dir, name) -> name.startsWith(id));
+            if (files == null || files.length == 0) {
+                return null;
+            } else if (files.length == 1) {
+                return readObject(files[0], Commit.class);
+            } else {
+                System.out.println("There are more than 1 commit start with abbreviation. ");
+                return null;
+            }
         }
-        Commit c = readObject(f, Commit.class);
-        return c;
     }
 
     /**
