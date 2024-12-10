@@ -47,8 +47,8 @@ public class Repository {
     public static void init() throws IOException {
         /* Make objects directory. */
         if (!GITLET_DIR.mkdirs()) {
-            System.out.println("A Gitlet version-control system " +
-                    "already exists in the current directory.");
+            System.out.println("A Gitlet version-control system "
+                    + "already exists in the current directory.");
             return;
         }
         Tree.BLOB_DIR.mkdirs();
@@ -419,7 +419,8 @@ public class Repository {
     }
 
     /** Takes all files in the commit at the head of the given branch, and puts them in the
-     * working directory, overwriting the versions of the files that are already there if they exist. */
+     * working directory, overwriting the versions of the files that are already there if
+     * they exist. */
     public static void checkoutBranch(String branchName) {
         File branch = join(Tree.REFS_DIR, branchName, "1.txt");
         if (!branch.exists()) {
@@ -436,8 +437,8 @@ public class Repository {
         List<String> l = plainFilenamesIn(Tree.CWD);
         for (String fileName : l) {
             if (!currentCommit.nameToBlobId.containsKey(fileName)) {
-                System.out.println("There is an untracked file in the way" +
-                        "; delete it, or add and commit it first.");
+                System.out.println("There is an untracked file in the way"
+                        + "; delete it, or add and commit it first.");
                 return;
             }
         }
@@ -485,4 +486,19 @@ public class Repository {
         writeContents(newBranch, c.generateId());
     }
 
+    /** Deletes the branch with the given name. */
+    public static void rmbranch(String branchName) {
+        File branch = join(Tree.REFS_DIR, branchName);
+        if (!branch.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+        if (Objects.equals(getBranchName(), branchName)) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+        File h = join(branch, "1.txt");
+        h.delete();
+        branch.delete();
+    }
 }
