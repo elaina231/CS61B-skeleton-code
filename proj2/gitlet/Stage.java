@@ -7,7 +7,7 @@ public class Stage implements Serializable {
     /** Key:filename Value:id  The map of file in add stage */
     private Map<String, String> addNameToBlobId;
     /** Key:filename  The set of the file in rm stage */
-    public Set<String> removeName;
+    private Set<String> removeName;
 
     /** Construction method. */
     public Stage() {
@@ -53,5 +53,9 @@ public class Stage implements Serializable {
 
     public void addClear() {
         addNameToBlobId.clear();
+    }
+
+    public Set<String> getRemoveName() {
+        return removeName;
     }
 }

@@ -20,13 +20,13 @@ public class Commit implements Serializable {
      */
 
     /** The message of this Commit. */
-    public String message;
+    private String message;
     /** The time when this Commit was commit. */
-    public Date time;
+    private Date time;
     /** The id of the parent of this Commit. */
-    public List<String> parents;
+    private List<String> parents;
     /** The id of the file in this Commit. */
-    public Map<String, String> nameToBlobId;
+    private Map<String, String> nameToBlobId;
 
     /** Construction method. */
     public Commit(String message, Date time, String parent) {
@@ -59,5 +59,21 @@ public class Commit implements Serializable {
         System.out.println("time: " + time);
         System.out.println("parents: " + parents);
         System.out.println("nameToBlobId: " + nameToBlobId);
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public Date getTime() {
+        return time;
+    }
+
+    public List<String> getParents() {
+        return parents;
+    }
+
+    public Map<String, String> getNameToBlobId() {
+        return nameToBlobId;
     }
 }

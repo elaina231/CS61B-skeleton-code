@@ -165,8 +165,8 @@ public class Repository {
         Blob addFile = new Blob(addFileName, readContentsAsString(f));
         writeBlob(addFile);
         /* whether current commit contain the file. */
-        if (c.nameToBlobId.containsKey(addFile.getFilename())) {
-            if (c.nameToBlobId.get(addFile.getFilename()).equals(addFile.getBlobId())) {
+        if (c.getNameToBlobId().containsKey(addFile.getFilename())) {
+            if (c.getNameToBlobId().get(addFile.getFilename()).equals(addFile.getBlobId())) {
                 /* if equals, check stage and delete if it exist. */
                 s.addRemove(addFile.getFilename());
             } else {
@@ -177,7 +177,7 @@ public class Repository {
             /* not exist in commit, add it to stage. */
             addToStage(s, addFile);
         }
-        s.removeName.remove(addFileName);
+        s.getRemoveName().remove(addFileName);
         writeStage(s);
     }
 
@@ -212,22 +212,22 @@ public class Repository {
 //                    System.out.println("new clone commit:");
 //                    newCommit.print();
         Stage s = getStage();
-        if (s.addIsEmpty() && s.removeName.isEmpty()) {
+        if (s.addIsEmpty() && s.getRemoveName().isEmpty()) {
             System.out.println("No changes added to the commit.");
             return;
         }
         /* Process the add stage. */
         for (String fileName : s.addKeySet()) {
             String fileId = s.addGet(fileName);
-            newCommit.nameToBlobId.put(fileName, fileId);
+            newCommit.getNameToBlobId().put(fileName, fileId);
         }
         /* process the rm stage. */
-        for (String fileName : s.removeName) {
-            newCommit.nameToBlobId.remove(fileName);
+        for (String fileName : s.getRemoveName()) {
+            newCommit.getNameToBlobId().remove(fileName);
         }
         /* Clear the staging area. */
         s.addClear();
-        s.removeName.clear();
+        s.getRemoveName().clear();
         writeStage(s);
         /* Update the commit tree, HEAD, branch head. */
         File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
@@ -253,13 +253,13 @@ public class Repository {
         Commit c = getCurrentCommit();
         /* If the file is neither staged nor tracked by the head commit,
         print the error message No reason to remove the file. */
-        if (!s.addContains(fileName) && !c.nameToBlobId.containsKey(fileName)) {
+        if (!s.addContains(fileName) && !c.getNameToBlobId().containsKey(fileName)) {
             System.out.println("No reason to remove the file.");
             return;
         }
         s.addRemove(fileName);
-        if (c.nameToBlobId.containsKey(fileName)) {
-            s.removeName.add(fileName);
+        if (c.getNameToBlobId().containsKey(fileName)) {
+            s.getRemoveName().add(fileName);
             File f = join(Tree.CWD, fileName);
             if (f.exists()) {
                 f.delete();
@@ -273,10 +273,10 @@ public class Repository {
      * If the commit has no parent, returns a commit with the message "end".
      */
     private static Commit getFirstParentCommit(Commit c) {
-        if (c.parents.isEmpty()) {
+        if (c.getParents().isEmpty()) {
             return new Commit("end", null, null);
         }
-        String id = c.parents.get(0);
+        String id = c.getParents().get(0);
         File f = join(Tree.COMMIT_DIR, id + ".txt");
         return readObject(f, Commit.class);
     }
@@ -284,16 +284,16 @@ public class Repository {
     private static void commitPrint(Commit currentCommit) {
         System.out.println("===");
         System.out.println("commit " + currentCommit.generateId());
-        if (currentCommit.parents.size() > 1) {
+        if (currentCommit.getParents().size() > 1) {
             System.out.print("Merge: ");
-            for (String parent : currentCommit.parents) {
+            for (String parent : currentCommit.getParents()) {
                 String s = parent.substring(0, 7);
                 System.out.print(s + " ");
             }
             System.out.println();
         }
-        System.out.println("Date: " + dateToTimeStamp(currentCommit.time));
-        System.out.println(currentCommit.message);
+        System.out.println("Date: " + dateToTimeStamp(currentCommit.getTime()));
+        System.out.println(currentCommit.getMessage());
         System.out.println();
     }
 
@@ -303,7 +303,7 @@ public class Repository {
      */
     public static void log() {
         Commit currentCommit = getCurrentCommit();
-        while (!currentCommit.message.equals("end")) {
+        while (!currentCommit.getMessage().equals("end")) {
             commitPrint(currentCommit);
             currentCommit = getFirstParentCommit(currentCommit);
         }
@@ -333,7 +333,7 @@ public class Repository {
             /* because the filename including ".txt", so forgo the last four character. */
             String id = filename.substring(0, filename.length() - 4);
             Commit c = getCommit(id);
-            if (c.message.equals(m)) {
+            if (c.getMessage().equals(m)) {
                 isAny = true;
                 System.out.println(c.generateId());
             }
@@ -367,7 +367,7 @@ public class Repository {
         System.out.println();
         /* Removed Files. */
         System.out.println("=== Removed Files ===");
-        for (String fileName : s.removeName) {
+        for (String fileName : s.getRemoveName()) {
             System.out.println(fileName);
         }
         System.out.println();
@@ -392,11 +392,11 @@ public class Repository {
             System.out.println("No commit with that id exists.");
             return;
         }
-        if (!c.nameToBlobId.containsKey(fileName)) {
+        if (!c.getNameToBlobId().containsKey(fileName)) {
             System.out.println("File does not exist in that commit.");
             return;
         }
-        String blobId = c.nameToBlobId.get(fileName);
+        String blobId = c.getNameToBlobId().get(fileName);
         Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
         File f = join(Tree.CWD, fileName);
         if (!f.exists()) {
@@ -426,7 +426,7 @@ public class Repository {
         List<String> l = plainFilenamesIn(Tree.CWD);
         Stage s = getStage();
         for (String fileName : l) {
-            if (!currentCommit.nameToBlobId.containsKey(fileName)
+            if (!currentCommit.getNameToBlobId().containsKey(fileName)
                     && !s.addContains(fileName)) {
                 System.out.println("There is an untracked file in the way"
                         + "; delete it, or add and commit it first.");
@@ -434,12 +434,12 @@ public class Repository {
             }
         }
         for (String fileName : l) {
-            if (!newCommit.nameToBlobId.containsKey(fileName)) {
+            if (!newCommit.getNameToBlobId().containsKey(fileName)) {
                 File f = join(Tree.CWD, fileName);
                 f.delete();
             }
         }
-        for (String fileName : newCommit.nameToBlobId.keySet()) {
+        for (String fileName : newCommit.getNameToBlobId().keySet()) {
             File f = join(Tree.CWD, fileName);
             if (!f.exists()) {
                 try {
@@ -448,7 +448,7 @@ public class Repository {
                     throw new RuntimeException(e);
                 }
             }
-            String blobId = newCommit.nameToBlobId.get(fileName);
+            String blobId = newCommit.getNameToBlobId().get(fileName);
             Blob b = readObject(join(Tree.BLOB_DIR, blobId + ".txt"), Blob.class);
             writeContents(f, b.getContents());
         }
