@@ -465,7 +465,6 @@ public class Repository {
             return;
         }
         String commitId = readContentsAsString(branch);
-        Commit currentCommit = getCurrentCommit();
         if (getBranchName().equals(branchName)) {
             System.out.println("No need to checkout the current branch.");
             return;
@@ -509,5 +508,21 @@ public class Repository {
         File h = join(branch, "1.txt");
         h.delete();
         branch.delete();
+    }
+
+    /** Checks out all the files tracked by the given commit. Removes
+     *  tracked files that are not present in that commit. Also moves the current
+     *  branch’s head to that commit node.*/
+    public static void reset(String commitId) {
+        Commit c = getCommit(commitId);
+        if (c == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
+        checkoutAllFileCommit(c);
+        File head = join(Tree.HEAD_DIR, getBranchName() + ".txt");
+        writeContents(head, c.generateId());
+        File branchHead = join(Tree.REFS_DIR, getBranchName(), "1.txt");
+        writeContents(branchHead, c.generateId());
     }
 }

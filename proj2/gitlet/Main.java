@@ -153,6 +153,17 @@ public class Main {
                 }
                 Repository.rmbranch(args[1]);
                 break;
+            case "reset":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length != 2) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                Repository.reset(args[1]);
+                break;
             default:
                 System.out.println("No command with that name exists.");
                 System.exit(0);
