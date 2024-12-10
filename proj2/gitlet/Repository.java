@@ -418,22 +418,11 @@ public class Repository {
         checkoutCommit(fileName, id);
     }
 
-    /** Takes all files in the commit at the head of the given branch, and puts them in the
+    /** Takes all files in the given commit , and puts them in the
      * working directory, overwriting the versions of the files that are already there if
      * they exist. */
-    public static void checkoutBranch(String branchName) {
-        File branch = join(Tree.REFS_DIR, branchName, "1.txt");
-        if (!branch.exists()) {
-            System.out.println("No such branch exist.");
-            return;
-        }
-        String commitId = readContentsAsString(branch);
+    private static void checkoutAllFileCommit(Commit newCommit, String branchName) {
         Commit currentCommit = getCurrentCommit();
-        if (getBranchName().equals(branchName)) {
-            System.out.println("No need to checkout the current branch.");
-            return;
-        }
-        Commit newCommit = getCommit(commitId);
         List<String> l = plainFilenamesIn(Tree.CWD);
         for (String fileName : l) {
             if (!currentCommit.nameToBlobId.containsKey(fileName)) {
@@ -468,6 +457,25 @@ public class Repository {
         Stage s = getStage();
         s.clear();
         writeStage(s);
+    }
+
+    /** Takes all files in the commit at the head of the given branch, and puts them in the
+     * working directory, overwriting the versions of the files that are already there if
+     * they exist. */
+    public static void checkoutBranch(String branchName) {
+        File branch = join(Tree.REFS_DIR, branchName, "1.txt");
+        if (!branch.exists()) {
+            System.out.println("No such branch exist.");
+            return;
+        }
+        String commitId = readContentsAsString(branch);
+        Commit currentCommit = getCurrentCommit();
+        if (getBranchName().equals(branchName)) {
+            System.out.println("No need to checkout the current branch.");
+            return;
+        }
+        Commit newCommit = getCommit(commitId);
+        checkoutAllFileCommit(newCommit, branchName);
     }
 
     /** Creates a new branch with the given name, and points it at the current head commit. */
