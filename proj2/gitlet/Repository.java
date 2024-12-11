@@ -673,6 +673,7 @@ public class Repository {
                     && !checkPresent(givenCommit, fName)) {
                 File f = join(Tree.CWD, fName);
                 rm(fName);
+                System.out.println(fName);
                 f.delete();
             }
             /* case 8 */
