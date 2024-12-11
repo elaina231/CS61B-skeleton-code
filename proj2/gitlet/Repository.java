@@ -198,7 +198,7 @@ public class Repository {
      * Saves a snapshot of tracked files in the current commit and staging area so they
      * can be restored at a later time, creating a new commit.
      */
-    public static void commit(String message) {
+    public static void commit(String message, Commit secParent) {
         /* Clone parent commit and take the stage. */
         if (Objects.equals(message, "")) {
             System.out.println("Please enter a commit message.");
@@ -211,6 +211,9 @@ public class Repository {
 //                    System.out.println();
 //                    System.out.println("new clone commit:");
 //                    newCommit.print();
+        if(secParent != null) {
+            newCommit.getParents().add(secParent.generateId());
+        }
         Stage s = getStage();
         if (s.addIsEmpty() && s.getRemoveName().isEmpty()) {
             System.out.println("No changes added to the commit.");
@@ -525,5 +528,135 @@ public class Repository {
         writeContents(head, c.generateId());
         File branchHead = join(Tree.REFS_DIR, getBranchName(), "1.txt");
         writeContents(branchHead, c.generateId());
+    }
+
+    /** Return the head commit of a branch. */
+    private static Commit getCommitOfBranch(String branchName) {
+        File branch = join(Tree.REFS_DIR, branchName, "1.txt");
+        if (!branch.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return null;
+        }
+        return getCommit(readContentsAsString(branch));
+    }
+
+    /** Find the latest common ancestor of two commit. Return
+     * null if does not exist. */
+    private static Commit findAncestor(Commit a, Commit b) {
+        Set<String> s = new TreeSet<>();
+        Queue<Commit> q = new LinkedList<>();
+        q.add(a);
+        while (!q.isEmpty()) {
+            Commit c = q.remove();
+            s.add(c.generateId());
+            for (String string : c.getParents()) {
+                q.add(getCommit(string));
+            }
+        }
+        q.add(b);
+        while (!q.isEmpty()) {
+            Commit c = q.remove();
+            if (s.contains(c.generateId())) {
+                return c;
+            }
+            for (String string : c.getParents()) {
+                q.add(getCommit(string));
+            }
+        }
+        return null;
+    }
+
+
+    /** Merges files from the given branch into the current branch. */
+    public static void merge(String branchName) {
+        Stage s = getStage();
+        if (!s.addIsEmpty() || !s.getRemoveName().isEmpty()) {
+            System.out.println("You have uncommitted changes.");
+            return;
+        }
+        if (branchName.equals(getBranchName())) {
+            System.out.println("Cannot merge a branch with itself.");
+            return;
+        }
+        Commit currentCommit = getCommitOfBranch(getBranchName());
+        Commit givenCommit = getCommitOfBranch(branchName);
+        if (currentCommit == null || givenCommit == null) {
+            return;
+        }
+        List<String> l = plainFilenamesIn(Tree.CWD);
+        for (String fileName : l) {
+            if (!currentCommit.getNameToBlobId().containsKey(fileName)
+                    && !s.addContains(fileName)) {
+                System.out.println("There is an untracked file in the way"
+                        + "; delete it, or add and commit it first.");
+                return;
+            }
+        }
+        Commit split = findAncestor(givenCommit, currentCommit);
+        if (split.generateId().equals(givenCommit.generateId())) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (split.generateId().equals(currentCommit.generateId())) {
+            System.out.println("Current branch fast-forwarded.");
+            checkoutBranch(branchName);
+            return;
+        }
+        Set<String> fileName = new TreeSet<>();
+        fileName.addAll(split.getNameToBlobId().keySet());
+        fileName.addAll(givenCommit.getNameToBlobId().keySet());
+        fileName.addAll(currentCommit.getNameToBlobId().keySet());
+        boolean isConfilct = false;
+        for (String fName : fileName) {
+            /* if split == head, other:1.not equal 2.not exist*/
+            if (split.getNameToBlobId().containsKey(fName)
+                    && currentCommit.getNameToBlobId().containsKey(fName)
+                    && split.getNameToBlobId().get(fName).equals(currentCommit.getNameToBlobId().get(fName))) {
+                /* not equal.change it.*/
+                if (givenCommit.getNameToBlobId().containsKey(fName)
+                        && !split.getNameToBlobId().get(fName).equals(givenCommit.getNameToBlobId().get(fName))) {
+                    checkoutCommit(fName, givenCommit.generateId());
+                    add(fName);
+                }
+                /* not exist. remove it*/
+                if (!givenCommit.getNameToBlobId().containsKey(fName)) {
+                    rm(fName);
+                }
+            }
+            /* if split == other, head:1.not equal 2.not exist
+            * do nothing*/
+            /* if split exist, either head or other does not exist.
+            * do nothing*/
+            /* if split and head does not exist, other create new.
+            * add it*/
+            if (!split.getNameToBlobId().containsKey(fName) && !givenCommit.getNameToBlobId().containsKey(fName)) {
+                checkoutCommit(fName, givenCommit.generateId());
+                add(fName);
+            }
+            /* if split and other does not exist, head create new
+            * do nothing*/
+            /* modified in other and head*/
+            if (currentCommit.getNameToBlobId().containsKey(fName)
+                && givenCommit.getNameToBlobId().containsKey(fName)
+                && !currentCommit.getNameToBlobId().get(fName).equals(givenCommit.getNameToBlobId().get(fName))) {
+                Blob cur = readObject(join(Tree.BLOB_DIR, currentCommit.getNameToBlobId().get(fName) + ".txt"), Blob.class);
+                String a = cur.getContents();
+                Blob given = readObject(join(Tree.BLOB_DIR, givenCommit.getNameToBlobId().get(fName) + ".txt"), Blob.class);
+                String b = given.getContents();
+                String result = "<<<<<<< HEAD\n" +
+                        a + "\n" +
+                        "=======\n" +
+                        b + "\n" +
+                        ">>>>>>>";
+                File f = join(Tree.CWD, fName);
+                writeContents(f, result);
+                isConfilct = true;
+                add(fName);
+            }
+        }
+        commit("Merged " + branchName + " into " + getBranchName() + ".", givenCommit);
+        if (isConfilct) {
+            System.out.println("Encountered a merge conflict.");
+        }
     }
 }

@@ -51,7 +51,7 @@ public class Main {
                     System.out.println("Incorrect operands.");
                     System.exit(0);
                 }
-                Repository.commit(args[1]);
+                Repository.commit(args[1], null);
                 break;
             case "rm":
                 if (!Tree.GITLET_DIR.exists()) {
@@ -163,6 +163,17 @@ public class Main {
                     System.exit(0);
                 }
                 Repository.reset(args[1]);
+                break;
+            case "merge":
+                if (!Tree.GITLET_DIR.exists()) {
+                    System.out.println("Not in an initialized Gitlet directory.");
+                    System.exit(0);
+                }
+                if (args.length != 2) {
+                    System.out.println("Incorrect operands.");
+                    System.exit(0);
+                }
+                Repository.merge(args[1]);
                 break;
             default:
                 System.out.println("No command with that name exists.");
