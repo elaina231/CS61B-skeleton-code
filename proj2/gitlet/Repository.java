@@ -211,7 +211,7 @@ public class Repository {
 //                    System.out.println();
 //                    System.out.println("new clone commit:");
 //                    newCommit.print();
-        if(secParent != null) {
+        if (secParent != null) {
             newCommit.getParents().add(secParent.generateId());
         }
         Stage s = getStage();
@@ -566,6 +566,50 @@ public class Repository {
         return null;
     }
 
+    /** Check if a file have been modified.(both in split and c) */
+    private static boolean checkModified(Commit split, Commit c, String fName) {
+        Map<String, String> sp = split.getNameToBlobId();
+        Map<String, String> cp = c.getNameToBlobId();
+        if (sp.containsKey(fName) && cp.containsKey(fName)) {
+            return !sp.get(fName).equals(cp.get(fName));
+        }
+        return false;
+    }
+
+    /** Check if a file have been removed.(in split and not in c) */
+    private static boolean checkRemoved(Commit split, Commit c, String fName) {
+        Map<String, String> sp = split.getNameToBlobId();
+        Map<String, String> cp = c.getNameToBlobId();
+        return sp.containsKey(fName) && !cp.containsKey(fName);
+    }
+
+    /** Check whether present in given commit. */
+    private static boolean checkPresent(Commit c, String fName) {
+        return c.getNameToBlobId().containsKey(fName);
+    }
+
+    /** Check whether conflict. */
+    private static boolean checkConflict(Commit split, Commit cur, Commit given, String fName) {
+        Map<String, String> sp = split.getNameToBlobId();
+        Map<String, String> cp = cur.getNameToBlobId();
+        Map<String, String> gp = given.getNameToBlobId();
+        if (!sp.containsKey(fName)) {
+            return checkPresent(cur, fName) && checkPresent(given, fName)
+                    && !cp.get(fName).equals(cp.get(fName));
+        } else {
+            if (!cp.containsKey(fName)
+                    && !gp.get(fName).equals(sp.get(fName))) {
+                return true;
+            }
+            if (!gp.containsKey(fName)
+                    && !cp.get(fName).equals(sp.get(fName))) {
+                return true;
+            }
+            return !gp.get(fName).equals(sp.get(fName))
+                    && !cp.get(fName).equals(sp.get(fName))
+                    && !gp.get(fName).equals(cp.get(fName));
+        }
+    }
 
     /** Merges files from the given branch into the current branch. */
     public static void merge(String branchName) {
@@ -608,45 +652,44 @@ public class Repository {
         fileName.addAll(currentCommit.getNameToBlobId().keySet());
         boolean isConfilct = false;
         for (String fName : fileName) {
-            /* if split == head, other:1.not equal 2.not exist*/
-            if (split.getNameToBlobId().containsKey(fName)
-                    && currentCommit.getNameToBlobId().containsKey(fName)
-                    && split.getNameToBlobId().get(fName).equals(currentCommit.getNameToBlobId().get(fName))) {
-                /* not equal.change it.*/
-                if (givenCommit.getNameToBlobId().containsKey(fName)
-                        && !split.getNameToBlobId().get(fName).equals(givenCommit.getNameToBlobId().get(fName))) {
-                    checkoutCommit(fName, givenCommit.generateId());
-                    add(fName);
-                }
-                /* not exist. remove it*/
-                if (!givenCommit.getNameToBlobId().containsKey(fName)) {
-                    rm(fName);
-                }
-            }
-            /* if split == other, head:1.not equal 2.not exist
-            * do nothing*/
-            /* if split exist, either head or other does not exist.
-            * do nothing*/
-            /* if split and head does not exist, other create new.
-            * add it*/
-            if (!split.getNameToBlobId().containsKey(fName) && !currentCommit.getNameToBlobId().containsKey(fName)) {
+            /* case 1 */
+            if (!checkModified(split, currentCommit, fName) && checkModified(split, givenCommit, fName)) {
                 checkoutCommit(fName, givenCommit.generateId());
                 add(fName);
             }
-            /* if split and other does not exist, head create new
-            * do nothing*/
-            /* modified in other and head*/
-            if (currentCommit.getNameToBlobId().containsKey(fName)
-                && givenCommit.getNameToBlobId().containsKey(fName)
-                && !currentCommit.getNameToBlobId().get(fName).equals(givenCommit.getNameToBlobId().get(fName))) {
-                Blob cur = readObject(join(Tree.BLOB_DIR, currentCommit.getNameToBlobId().get(fName) + ".txt"), Blob.class);
-                String a = cur.getContents();
-                Blob given = readObject(join(Tree.BLOB_DIR, givenCommit.getNameToBlobId().get(fName) + ".txt"), Blob.class);
-                String b = given.getContents();
+            /* case 5 */
+            if (!checkPresent(split, fName)
+                    && checkPresent(givenCommit, fName)
+                    && !checkPresent(currentCommit, fName)) {
+                checkoutCommit(fName, givenCommit.generateId());
+                add(fName);
+            }
+            /* case 6 */
+            if (checkPresent(split, fName)
+                    && !checkModified(split, currentCommit, fName)
+                    && !checkPresent(givenCommit, fName)) {
+                File f = join(Tree.CWD, fName);
+                f.delete();
+                rm(fName);
+            }
+            /* case 8 */
+            if (checkConflict(split, currentCommit, givenCommit, fName)) {
+                File cur = join(Tree.BLOB_DIR, currentCommit.getNameToBlobId().get(fName) + ".txt");
+                String a = "";
+                String b = "";
+                if (cur.exists()) {
+                    Blob curB = readObject(cur, Blob.class);
+                    a = curB.getContents();
+                }
+                File giv = join(Tree.BLOB_DIR, givenCommit.getNameToBlobId().get(fName) + ".txt");
+                if (cur.exists()) {
+                    Blob givB = readObject(giv, Blob.class);
+                    b = givB.getContents();
+                }
                 String result = "<<<<<<< HEAD\n" +
-                        a + "\n" +
+                        a +
                         "=======\n" +
-                        b + "\n" +
+                        b +
                         ">>>>>>>";
                 File f = join(Tree.CWD, fName);
                 writeContents(f, result);
