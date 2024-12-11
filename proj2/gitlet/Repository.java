@@ -672,8 +672,8 @@ public class Repository {
                     && !checkModified(split, currentCommit, fName)
                     && !checkPresent(givenCommit, fName)) {
                 File f = join(Tree.CWD, fName);
-                f.delete();
                 rm(fName);
+                f.delete();
             }
             /* case 8 */
             if (checkConflict(split, currentCommit, givenCommit, fName)) {
