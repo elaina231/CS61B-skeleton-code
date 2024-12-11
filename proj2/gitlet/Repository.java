@@ -598,10 +598,12 @@ public class Repository {
                     && !cp.get(fName).equals(cp.get(fName));
         } else {
             if (!cp.containsKey(fName)
+                    && gp.containsKey(fName)
                     && !gp.get(fName).equals(sp.get(fName))) {
                 return true;
             }
             if (!gp.containsKey(fName)
+                    && cp.containsKey(fName)
                     && !cp.get(fName).equals(sp.get(fName))) {
                 return true;
             }
@@ -687,11 +689,7 @@ public class Repository {
                     Blob givB = readObject(giv, Blob.class);
                     b = givB.getContents();
                 }
-                String result = "<<<<<<< HEAD\n" +
-                        a +
-                        "=======\n" +
-                        b +
-                        ">>>>>>>";
+                String result = "<<<<<<< HEAD\n" + a + "=======\n" + b + ">>>>>>>\n";
                 File f = join(Tree.CWD, fName);
                 writeContents(f, result);
                 isConfilct = true;
