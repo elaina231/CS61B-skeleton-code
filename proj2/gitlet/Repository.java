@@ -576,6 +576,13 @@ public class Repository {
         return false;
     }
 
+    private static boolean same(Commit a, Commit b, String fName) {
+        Map<String, String> ap = a.getNameToBlobId();
+        Map<String, String> bp = b.getNameToBlobId();
+        return ap.containsKey(fName) && bp.containsKey(fName)
+                && ap.get(fName).equals(bp.get(fName));
+    }
+
     /** Check if a file have been removed.(in split and not in c) */
     private static boolean checkRemoved(Commit split, Commit c, String fName) {
         Map<String, String> sp = split.getNameToBlobId();
@@ -669,11 +676,11 @@ public class Repository {
             }
             /* case 6 */
             if (checkPresent(split, fName)
-                    && !checkModified(split, currentCommit, fName)
+                    && checkPresent(currentCommit, fName)
+                    && same(split, currentCommit, fName)
                     && !checkPresent(givenCommit, fName)) {
                 File f = join(Tree.CWD, fName);
                 rm(fName);
-                System.out.println(fName);
                 f.delete();
             }
             /* case 8 */
