@@ -629,7 +629,7 @@ public class Repository {
             * do nothing*/
             /* if split and head does not exist, other create new.
             * add it*/
-            if (!split.getNameToBlobId().containsKey(fName) && !givenCommit.getNameToBlobId().containsKey(fName)) {
+            if (!split.getNameToBlobId().containsKey(fName) && !currentCommit.getNameToBlobId().containsKey(fName)) {
                 checkoutCommit(fName, givenCommit.generateId());
                 add(fName);
             }
