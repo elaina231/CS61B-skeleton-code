@@ -683,7 +683,7 @@ public class Repository {
                     a = curB.getContents();
                 }
                 File giv = join(Tree.BLOB_DIR, givenCommit.getNameToBlobId().get(fName) + ".txt");
-                if (cur.exists()) {
+                if (giv.exists()) {
                     Blob givB = readObject(giv, Blob.class);
                     b = givB.getContents();
                 }
