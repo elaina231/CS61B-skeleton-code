@@ -605,7 +605,8 @@ public class Repository {
                     && !cp.get(fName).equals(sp.get(fName))) {
                 return true;
             }
-            return !gp.get(fName).equals(sp.get(fName))
+            return gp.containsKey(fName) && cp.containsKey(fName)
+                    && !gp.get(fName).equals(sp.get(fName))
                     && !cp.get(fName).equals(sp.get(fName))
                     && !gp.get(fName).equals(cp.get(fName));
         }
