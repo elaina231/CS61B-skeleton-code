@@ -624,7 +624,7 @@ public class Repository {
     /** Get the file contents. */
     public static String getContents(Commit c, String fName) {
         String a = "";
-        File cur = join(Tree.BLOB_DIR, c.getNameToBlobId().get(fName) + ".txt");;
+        File cur = join(Tree.BLOB_DIR, c.getNameToBlobId().get(fName) + ".txt");
         if (cur.exists()) {
             Blob curB = readObject(cur, Blob.class);
             a = curB.getContents();
