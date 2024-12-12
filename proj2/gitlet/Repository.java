@@ -621,6 +621,17 @@ public class Repository {
         }
     }
 
+    /** Get the file contents. */
+    public static String getContents(Commit c, String fName) {
+        String a = "";
+        File cur = join(Tree.BLOB_DIR, c.getNameToBlobId().get(fName) + ".txt");;
+        if (cur.exists()) {
+            Blob curB = readObject(cur, Blob.class);
+            a = curB.getContents();
+        }
+        return a;
+    }
+
     /** Merges files from the given branch into the current branch. */
     public static void merge(String branchName) {
         Stage s = getStage();
@@ -663,7 +674,8 @@ public class Repository {
         boolean isConfilct = false;
         for (String fName : fileName) {
             /* case 1 */
-            if (!checkModified(split, currentCommit, fName) && checkModified(split, givenCommit, fName)) {
+            if (!checkModified(split, currentCommit, fName)
+                    && checkModified(split, givenCommit, fName)) {
                 checkoutCommit(fName, givenCommit.generateId());
                 add(fName);
             }
@@ -685,18 +697,8 @@ public class Repository {
             }
             /* case 8 */
             if (checkConflict(split, currentCommit, givenCommit, fName)) {
-                File cur = join(Tree.BLOB_DIR, currentCommit.getNameToBlobId().get(fName) + ".txt");
-                String a = "";
-                String b = "";
-                if (cur.exists()) {
-                    Blob curB = readObject(cur, Blob.class);
-                    a = curB.getContents();
-                }
-                File giv = join(Tree.BLOB_DIR, givenCommit.getNameToBlobId().get(fName) + ".txt");
-                if (giv.exists()) {
-                    Blob givB = readObject(giv, Blob.class);
-                    b = givB.getContents();
-                }
+                String a = getContents(currentCommit, fName);
+                String b = getContents(givenCommit, fName);
                 String result = "<<<<<<< HEAD\n" + a + "=======\n" + b + ">>>>>>>\n";
                 File f = join(Tree.CWD, fName);
                 writeContents(f, result);
